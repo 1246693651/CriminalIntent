@@ -20,12 +20,16 @@ public class CrimeLab {
 
     private CrimeLab(Context context) {
         mCrimes = new ArrayList<>();
-        for (int i = 0; i < 100; i++) {
-            Crime crime = new Crime();
-            crime.setTitle("潘毅辉Crime #" + i);
-            crime.setSolved(i%2 == 0); // Every other one
-            mCrimes.add(crime);
-        }
+    }
+
+    // 新建陋习
+    public void addCrime(Crime c) {
+        mCrimes.add(c);
+    }
+
+    // 删除陋习
+    public void deleteCrime(Crime c) {
+        mCrimes.remove(c);
     }
 
     public List<Crime> getCrimes() {
