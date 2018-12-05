@@ -56,6 +56,12 @@ public class CrimeFragment extends Fragment {
         setHasOptionsMenu(true);
     }
 
+    @Override
+    public void onPause() {
+        super.onPause();
+        CrimeLab.get(getActivity()).updateCrime(mCrime);
+    }
+
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
@@ -158,9 +164,10 @@ public class CrimeFragment extends Fragment {
     }
 
     private void updateDate() {
-        String date = (String) DateFormat.format("yyyy, MMMM dd, EEEE kk:mm", mCrime.getDate());
-        mDateButton.setText(date.substring(0, 17));
-        mTimeButton.setText(date.substring(18));
+        String date1 = (String) DateFormat.format("yyyy, MMMM dd, EEEE", mCrime.getDate());
+        String date2 = (String) DateFormat.format("kk:mm", mCrime.getDate());
+        mDateButton.setText(date1);
+        mTimeButton.setText(date2);
     }
 
 }
