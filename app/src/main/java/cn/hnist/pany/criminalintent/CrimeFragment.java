@@ -124,6 +124,7 @@ public class CrimeFragment extends Fragment {
             @Override
             public void onCheckedChanged(CompoundButton compoundButton, boolean isChecked) {
                 mCrime.setSolved(isChecked);
+                Log.d(TAG, "Check改变为：" + mCrime.isSolved());
             }
         });
         return v;

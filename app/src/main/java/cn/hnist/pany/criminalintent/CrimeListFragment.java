@@ -19,6 +19,8 @@ import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import org.litepal.tablemanager.Connector;
+
 import java.util.List;
 
 public class CrimeListFragment extends Fragment {
