@@ -11,6 +11,8 @@ public class CrimeBean extends LitePalSupport {
     private String mTitle;
     private Date mDate;
     private boolean mSolved;
+    private String mSuspect;
+    private String mPhone;
 
     public UUID getId() {
         return UUID.fromString(mId);
@@ -42,5 +44,21 @@ public class CrimeBean extends LitePalSupport {
 
     public void setSolved(boolean solved) {
         mSolved = solved;
+    }
+
+    public String getSuspect() {
+        return mSuspect;
+    }
+
+    public void setSuspect(String suspect) {
+        mSuspect = suspect;
+    }
+
+    public String getPhone() {
+        return mPhone;
+    }
+
+    public void setPhone(String phone) {
+        mPhone = phone;
     }
 }

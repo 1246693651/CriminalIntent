@@ -10,6 +10,7 @@ import org.litepal.LitePal;
 import org.litepal.crud.LitePalSupport;
 import org.litepal.tablemanager.Connector;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -40,21 +41,25 @@ public class CrimeLab {
     }
 
     // 自定义一个将CrimeBean 转化为 Crime的函数
-    private Crime toCrime(CrimeBean crimeBean){
+    private Crime toCrime(CrimeBean crimeBean) {
         Crime crime = new Crime(crimeBean.getId());
         crime.setTitle(crimeBean.getTitle());
         crime.setDate(crimeBean.getDate());
         crime.setSolved(crimeBean.isSolved());
+        crime.setSuspect(crimeBean.getSuspect());
+        crime.setPhone(crimeBean.getPhone());
         return crime;
     }
 
     // 自定义一个将CrimeBean 转化为 Crime的函数
-    private CrimeBean toCrimeBean(Crime c){
+    private CrimeBean toCrimeBean(Crime c) {
         CrimeBean crime = new CrimeBean();
         crime.setId(c.getId());
         crime.setTitle(c.getTitle());
         crime.setDate(c.getDate());
         crime.setSolved(c.isSolved());
+        crime.setSuspect(c.getSuspect());
+        crime.setPhone(c.getPhone());
         return crime;
     }
 
@@ -71,11 +76,17 @@ public class CrimeLab {
 //        mCrimes.remove(c);
 //        String uuidString = c.getId().toString();
 //        mDatabase.delete(CrimeTable.NAME, CrimeTable.Cols.UUID + " = ?", new String[]{uuidString});
-        LitePal.deleteAll(CrimeBean.class,"mID=?", c.getId().toString());
+        LitePal.deleteAll(CrimeBean.class, "mID=?", c.getId().toString());
     }
 
     // 获取全部陋习
     public List<Crime> getCrimes() {
+        List<Crime> crimes = new ArrayList<>();
+        List<CrimeBean> crimeBeans = LitePal.findAll(CrimeBean.class);
+        for (CrimeBean crimeBean : crimeBeans) {
+            crimes.add(toCrime(crimeBean));
+        }
+        return crimes;
 //        List<Crime> crimes = new ArrayList<>();
 //        CrimeCursorWrapper cursor = queryCrimes(null, null);
 //        try {
@@ -87,17 +98,13 @@ public class CrimeLab {
 //        } finally {
 //            cursor.close();
 //        }
-        List<Crime> crimes = new ArrayList<>();
-        List<CrimeBean> crimeBeans = LitePal.findAll(CrimeBean.class);
-        for (CrimeBean crimeBean:crimeBeans){
-            crimes.add(toCrime(crimeBean));
-        }
-        return crimes;
 //        return new ArrayList<>();
     }
 
     // 获取单个陋习
     public Crime getCrime(UUID id) {
+        CrimeBean crimeBean = LitePal.where("mId=?", id.toString()).findFirst(CrimeBean.class);
+        return toCrime(crimeBean);
         /*for (Crime crime : mCrimes) {
             if (crime.getId().equals(id)) {
                 return crime;
@@ -114,19 +121,24 @@ public class CrimeLab {
 //        } finally {
 //            cursor.close();
 //        }\
-        CrimeBean crimeBean = LitePal.where("mId=?",id.toString()).findFirst(CrimeBean.class);
-        return toCrime(crimeBean);
+    }
+
+    public File getPhotoFile(Crime crime) {
+        File filesDir = mContext.getFilesDir();
+        return new File(filesDir, crime.getPhotoFilename());
     }
 
     public void updateCrime(Crime c) {
 //        String uuidString = crime.getId().toString();
 //        ContentValues values = getContentValues(crime);
 //        mDatabase.update(CrimeTable.NAME, values, CrimeTable.Cols.UUID + " = ?", new String[]{uuidString});
-        toCrimeBean(c).updateAll("mId=?",c.getId().toString());
+        toCrimeBean(c).updateAll("mId=?", c.getId().toString());
         // 强行修复更改check无效的bug
-        CrimeBean crimeBean = LitePal.where("mId=?",c.getId().toString()).findFirst(CrimeBean.class);
-        crimeBean.setSolved(c.isSolved());
-        crimeBean.save();
+        if (!c.isSolved()) {
+            CrimeBean crimeBean = LitePal.where("mId=?", c.getId().toString()).findFirst(CrimeBean.class);
+            crimeBean.setSolved(c.isSolved());
+            crimeBean.save();
+        }
     }
 
 //    //    private Cursor queryCrimes(String whereClause, String[] whereArgs) {
