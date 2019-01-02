@@ -1,6 +1,7 @@
 package cn.hnist.pany.criminalintent;
 
 import android.app.Activity;
+import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
@@ -63,6 +64,14 @@ public class CrimeFragment extends Fragment {
     private ImageButton mPhotoButton;
     private Bitmap mBitmap;
     private ViewTreeObserver mPhotoObserver;
+    private Callbacks mCallbacks;
+
+    /**
+     * Required interface for hosting activities
+     */
+    public interface Callbacks {
+        void onCrimeUpdated(Crime crime);
+    }
 
     public static CrimeFragment newInstance(UUID crimeId) {
         Bundle args = new Bundle();
@@ -70,6 +79,12 @@ public class CrimeFragment extends Fragment {
         CrimeFragment fragment = new CrimeFragment();
         fragment.setArguments(args);
         return fragment;
+    }
+
+    @Override
+    public void onAttach(Context context) {
+        super.onAttach(context);
+        mCallbacks = (Callbacks) context;
     }
 
     @Override
@@ -85,6 +100,12 @@ public class CrimeFragment extends Fragment {
     public void onPause() {
         super.onPause();
         CrimeLab.get(getActivity()).updateCrime(mCrime);
+    }
+
+    @Override
+    public void onDetach() {
+        super.onDetach();
+        mCallbacks = null;
     }
 
     @Nullable
@@ -108,6 +129,7 @@ public class CrimeFragment extends Fragment {
                 // 在原有的文本s中，从start开始的count个字符替换了长度为before的旧文本
                 Log.d(TAG, "onTextChanged 被执行---->s=" + s + "----start=" + start + "----before=" + before + "----count" + count);
                 mCrime.setTitle(s.toString());
+                updateCrime();
             }
 
             @Override
@@ -149,6 +171,7 @@ public class CrimeFragment extends Fragment {
             @Override
             public void onCheckedChanged(CompoundButton compoundButton, boolean isChecked) {
                 mCrime.setSolved(isChecked);
+                updateCrime();
                 Log.d(TAG, "Check改变为：" + mCrime.isSolved());
             }
         });
@@ -284,6 +307,7 @@ public class CrimeFragment extends Fragment {
             Date date = (Date) data.getSerializableExtra(DatePickerFragment.EXTRA_DATE);
             Log.d(TAG, "修改后的date为: " + date.toString());
             mCrime.setDate(date);
+            updateCrime();
             updateDate();
         } else if (requestCode == REQUEST_CONTACT && data != null) {
             Uri contactUri = data.getData();
@@ -315,6 +339,7 @@ public class CrimeFragment extends Fragment {
                 if (phone.moveToNext()) {
                     String p = phone.getString(phone.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER));
                     mCrime.setPhone(p);
+                    updateCrime();
                     mCallButton.setText(p);
                 }
             } finally {
@@ -326,8 +351,14 @@ public class CrimeFragment extends Fragment {
                     mPhotoFile);
             getActivity().revokeUriPermission(uri,
                     Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
+            updateCrime();
             updatePhotoView(mPhotoView.getWidth(), mPhotoView.getHeight());
         }
+    }
+
+    private void updateCrime() {
+        CrimeLab.get(getActivity()).updateCrime(mCrime);
+        mCallbacks.onCrimeUpdated(mCrime);
     }
 
     private void updateDate() {

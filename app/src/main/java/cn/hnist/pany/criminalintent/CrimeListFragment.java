@@ -1,5 +1,6 @@
 package cn.hnist.pany.criminalintent;
 
+import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
@@ -8,6 +9,7 @@ import android.support.v4.app.Fragment;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.support.v7.widget.helper.ItemTouchHelper;
 import android.text.format.DateFormat;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -15,12 +17,10 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.TextView;
 
-import org.litepal.tablemanager.Connector;
-
+import java.util.Collections;
 import java.util.List;
 
 public class CrimeListFragment extends Fragment {
@@ -30,6 +30,20 @@ public class CrimeListFragment extends Fragment {
     private ImageView mAddImage;
     private CrimeAdapter mAdapter;
     private boolean mSubtitleVisible;
+    private Callbacks mCallbacks;
+
+    /**
+     * Required interface for hosting activities
+     */
+    public interface Callbacks {
+        void onCrimeSelected(Crime crime);
+    }
+
+    @Override
+    public void onAttach(Context context) {
+        super.onAttach(context);
+        mCallbacks = (Callbacks) context;
+    }
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -106,8 +120,10 @@ public class CrimeListFragment extends Fragment {
             case R.id.new_crime:
                 Crime crime = new Crime();
                 CrimeLab.get(getActivity()).addCrime(crime);
-                Intent intent = CrimePagerActivity.newIntent(getActivity(), crime.getId());
-                startActivity(intent);
+//                Intent intent = CrimePagerActivity.newIntent(getActivity(), crime.getId());
+//                startActivity(intent);
+                updateUI();
+                mCallbacks.onCrimeSelected(crime);
                 return true;
             case R.id.show_subtitle:
                 mSubtitleVisible = !mSubtitleVisible;
@@ -132,12 +148,18 @@ public class CrimeListFragment extends Fragment {
         activity.getSupportActionBar().setSubtitle(subtitle);
     }
 
-    private void updateUI() {
+    public void updateUI() {
         CrimeLab crimeLab = CrimeLab.get(getActivity());
         List<Crime> crimes = crimeLab.getCrimes();
 
         if (mAdapter == null) {
             mAdapter = new CrimeAdapter(crimes);
+            //先实例化Callback
+            ItemTouchHelper.Callback callback = new SimpleItemTouchHelperCallback(mAdapter);
+            //用Callback构造ItemtouchHelper
+            ItemTouchHelper touchHelper = new ItemTouchHelper(callback);
+            //调用ItemTouchHelper的attachToRecyclerView方法建立联系
+            touchHelper.attachToRecyclerView(mCrimeRecyclerView);
             mCrimeRecyclerView.setAdapter(mAdapter);
         } else {
             mAdapter.setCrimes(crimes);
@@ -167,8 +189,9 @@ public class CrimeListFragment extends Fragment {
         @Override
         public void onClick(View view) {
 //            Toast.makeText(getActivity(), mCrime.getTitle() + " clicked!", Toast.LENGTH_SHORT).show();
-            Intent intent = CrimePagerActivity.newIntent(getActivity(), mCrime.getId());
-            startActivity(intent);
+//            Intent intent = CrimePagerActivity.newIntent(getActivity(), mCrime.getId());
+//            startActivity(intent);
+            mCallbacks.onCrimeSelected(mCrime);
         }
 
         public void bind(Crime crime) {
@@ -180,7 +203,7 @@ public class CrimeListFragment extends Fragment {
         }
     }
 
-    private class CrimeAdapter extends RecyclerView.Adapter<CrimeHolder> {
+    private class CrimeAdapter extends RecyclerView.Adapter<CrimeHolder> implements ItemTouchHelperAdapter{
 
         private List<Crime> mCrimes;
 
@@ -212,5 +235,34 @@ public class CrimeListFragment extends Fragment {
         public void setCrimes(List<Crime> crimes) {
             mCrimes = crimes;
         }
+
+        @Override
+        public void onItemMove(int fromPosition, int toPosition) {
+            //交换位置
+            Collections.swap(mCrimes,fromPosition,toPosition);
+            notifyItemMoved(fromPosition,toPosition);
+        }
+
+        @Override
+        public void onItemDissmiss(int position) {
+            //移除数据
+            CrimeLab.get(getActivity()).deleteCrime(mCrimes.get(position));
+            mCrimes.remove(position);
+            notifyItemRemoved(position);
+        }
+
+    }
+
+    @Override
+    public void onDetach() {
+        super.onDetach();
+        mCallbacks = null;
+    }
+
+    public interface ItemTouchHelperAdapter {
+        void onItemMove(int fromPosition, int toPosition);
+
+        //数据删除
+        void onItemDissmiss(int position);
     }
 }
